@@ -1,0 +1,27 @@
+package com.xiaowa.writingassistant.mapper;
+
+import com.xiaowa.writingassistant.entity.Foreshadow;
+import org.apache.ibatis.annotations.*;
+import java.util.List;
+
+@Mapper
+public interface ForeshadowMapper {
+    @Insert("INSERT INTO foreshadow (user_id, title, description, status, remain_chapters) VALUES (#{userId}, #{title}, #{description}, #{status}, #{remainChapters})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    void insert(Foreshadow f);
+
+    @Select("SELECT * FROM foreshadow WHERE id = #{id}")
+    Foreshadow findById(Long id);
+
+    @Select("SELECT * FROM foreshadow WHERE user_id = #{userId}")
+    List<Foreshadow> findByUserId(Long userId);
+
+    @Select("SELECT * FROM foreshadow")
+    List<Foreshadow> selectAll();
+
+    @Update("UPDATE foreshadow SET title=#{title}, description=#{description}, status=#{status}, remain_chapters=#{remainChapters} WHERE id=#{id}")
+    void update(Foreshadow f);
+
+    @Delete("DELETE FROM foreshadow WHERE id = #{id}")
+    void delete(Long id);
+}

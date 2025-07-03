@@ -1,24 +1,44 @@
 package com.xiaowa.writingassistant.config;
 
+import com.xiaowa.writingassistant.security.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
+
+    // 1. 密码加密器
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    // 2. 认证提供器，绑定 UserDetailsService + PasswordEncoder
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider(CustomUserDetailsService userDetailsService) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+
+    // 3. 安全过滤链，明确使用上面的 provider
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           DaoAuthenticationProvider authProvider) throws Exception {
         http
-                // 1. 关闭 CSRF
                 .csrf(csrf -> csrf.disable())
-                // 2. 明确哪些接口不需要认证
+                .authenticationProvider(authProvider)            // ← 关键：确保用你的 provider
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                // 3. 取消默认的 HTTP Basic 登录弹窗
                 .httpBasic(Customizer.withDefaults());
         return http.build();
     }
