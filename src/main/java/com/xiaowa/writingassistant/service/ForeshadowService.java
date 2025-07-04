@@ -76,6 +76,7 @@ public class ForeshadowService {
         if (f == null) {
             throw new ResourceNotFoundException("Foreshadow not found: " + id);
         }
+        // 保持原有行为：只删除主表记录，不改动标签表
         foreshadowMapper.delete(id);
     }
 
@@ -98,5 +99,14 @@ public class ForeshadowService {
                         && f.getRemainChapters() <= threshold)
                 .map(f -> getById(f.getId()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 新增的方法：为指定 Foreshadow 添加一个标签
+     */
+    @Transactional
+    public void addTag(Long foreshadowId, ForeshadowTag tag) {
+        tag.setForeshadowId(foreshadowId);
+        tagMapper.insert(tag);
     }
 }
