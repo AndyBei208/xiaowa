@@ -16,6 +16,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.xiaowa.writingassistant.ai.dto.AIForeshadowResolutionRequest;
+import java.util.Map;
+import java.util.HashMap;
+
 @Service
 public class AiForeshadowService {
 
@@ -122,5 +126,74 @@ public class AiForeshadowService {
         }
         // fallback
         throw new RuntimeException("AI内容不是合法的JSON数组！原始内容：" + raw);
+    }
+
+    /**
+     * 检测伏笔回收状态，返回 JSON：{ "id": true/false }
+     */
+    public Map<Long, Boolean> checkForeshadowingResolution(AIForeshadowResolutionRequest req) {
+        // 构造伏笔列表字符串，便于 AI 理解
+        StringBuilder foreshadowStr = new StringBuilder();
+        for (AIForeshadowResolutionRequest.ForeshadowSimple f : req.getExistingForeshadows()) {
+            foreshadowStr.append(String.format("- ID: %d, 伏笔: %s, 说明: %s\n", f.getId(), f.getTitle(), f.getDescription()));
+        }
+
+        String prompt = String.format(
+                "你是一位精通故事结构分析的AI。请判断在给出的新文本中，下面这些伏笔是否得到了明确的解释或解决（即“回收”）。" +
+                        "请返回一个JSON对象，key为伏笔的ID，value为布尔值（true表示已回收，false表示未回收）。\n\n" +
+                        "---\n待检测的伏笔列表：\n%s\n---\n待分析的新文本内容：\n%s",
+                foreshadowStr, req.getDocumentContent()
+        );
+
+        String aiResponse = vivoApiService.getCompletion(prompt).block();
+        System.out.println("AI回收检测返回内容: " + aiResponse);
+
+        try {
+            // =======【修正开始】========
+            // 1. 解析顶层响应
+            JsonNode root = objectMapper.readTree(aiResponse);
+            JsonNode dataNode = root.get("data");
+            if (dataNode == null) throw new RuntimeException("AI返回无data字段！");
+            String contentRaw = dataNode.get("content").asText();
+            if (contentRaw == null) throw new RuntimeException("AI返回无content字段！");
+
+            // 2. 去除 markdown，只留 { ... }
+            String contentJson = extractJsonArrayOrObject(contentRaw);
+
+            // 3. 反序列化
+            Map<String, Boolean> map = objectMapper.readValue(contentJson, new TypeReference<Map<String, Boolean>>() {});
+            Map<Long, Boolean> result = new HashMap<>();
+            for (Map.Entry<String, Boolean> entry : map.entrySet()) {
+                try {
+                    result.put(Long.valueOf(entry.getKey()), entry.getValue());
+                } catch (Exception e) {
+                    // key不是数字，跳过
+                }
+            }
+            return result;
+            // =======【修正结束】========
+        } catch (Exception e) {
+            System.out.println("AI回收检测解析异常：");
+            System.out.println(aiResponse);
+            e.printStackTrace();
+            throw new RuntimeException("解析 AI 回收检测结果失败", e);
+        }
+    }
+
+    // 兼容对象的markdown strip方法
+    private static String extractJsonArrayOrObject(String raw) {
+        if (raw == null) return "";
+        // markdown 代码块带json
+        Pattern pattern = Pattern.compile("```json\\s*([\\[{].*?[\\]}])\\s*```", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(raw);
+        if (matcher.find()) return matcher.group(1);
+        // markdown代码块无json关键字
+        pattern = Pattern.compile("```\\s*([\\[{].*?[\\]}])\\s*```", Pattern.DOTALL);
+        matcher = pattern.matcher(raw);
+        if (matcher.find()) return matcher.group(1);
+        // 本身就是json
+        raw = raw.trim();
+        if (raw.startsWith("{") || raw.startsWith("[")) return raw;
+        throw new RuntimeException("AI内容不是合法JSON！原始内容：" + raw);
     }
 }
