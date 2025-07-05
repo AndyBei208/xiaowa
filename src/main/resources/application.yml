@@ -27,3 +27,6 @@ vivo:
 ai:
   service:
     base-url: "http://localhost:8081"
+logging:
+  level:
+    org.springframework.security: DEBUG
