@@ -1,5 +1,6 @@
 package com.xiaowa.writingassistant.service;
 
+import com.xiaowa.writingassistant.ai.AIClient;
 import com.xiaowa.writingassistant.entity.SettingCollection;
 import com.xiaowa.writingassistant.entity.SettingItem;
 import com.xiaowa.writingassistant.entity.Document;

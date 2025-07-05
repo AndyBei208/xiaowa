@@ -48,4 +48,12 @@ public class DocumentController {
         documentService.deleteDocument(id);
         return Result.success("Document deleted");
     }
+
+    // 批量获取多章接口：GET /api/docs/batch?ids=1,2,3,4,5
+    @GetMapping("/batch")
+    public Result<List<Document>> batchGet(@RequestParam List<Long> ids) {
+        List<Document> docs = documentService.getDocumentsByIds(ids);
+        return Result.success(docs);
+    }
+
 }

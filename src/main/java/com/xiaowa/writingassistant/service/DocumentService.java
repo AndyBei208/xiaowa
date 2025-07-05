@@ -34,4 +34,9 @@ public class DocumentService {
     public void deleteDocument(Long id) {
         documentMapper.delete(id);
     }
+
+    public List<Document> getDocumentsByIds(List<Long> ids) {
+        return documentMapper.findByIds(ids);
+    }
+
 }

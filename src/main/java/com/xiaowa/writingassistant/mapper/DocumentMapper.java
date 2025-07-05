@@ -26,4 +26,14 @@ public interface DocumentMapper {
 
     @Delete("DELETE FROM document WHERE id = #{id}")
     int delete(Long id);
+
+    @Select({
+            "<script>",
+            "SELECT * FROM document WHERE id IN",
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
+            "#{id}",
+            "</foreach>",
+            "</script>"
+    })
+    List<Document> findByIds(@Param("ids") List<Long> ids);
 }
