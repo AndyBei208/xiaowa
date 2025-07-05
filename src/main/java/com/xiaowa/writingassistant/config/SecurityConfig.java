@@ -37,7 +37,8 @@ public class SecurityConfig {
                 .authenticationProvider(authProvider)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/v1/generate/foreshadowing/identify").permitAll() // ✅ 加这一行
+                        .requestMatchers("/api/v1/generate/foreshadowing/identify").permitAll()
+                        .requestMatchers("/api/ai/settings/extract/**").permitAll() // 👈 新增这行，完全放开AI设定提取接口
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults());
