@@ -22,6 +22,11 @@ public class ForeshadowService {
         this.tagMapper = tagMapper;
     }
 
+    // 新增方法：根据文档ID获取该文档下的所有伏笔
+    public List<Foreshadow> listByDocumentId(Long docId) {
+        return foreshadowMapper.findByDocumentId(docId);
+    }
+
     @Transactional
     public Foreshadow create(Foreshadow f) {
         foreshadowMapper.insert(f);

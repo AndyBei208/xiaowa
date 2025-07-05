@@ -6,6 +6,9 @@ import java.util.List;
 
 @Mapper
 public interface ForeshadowMapper {
+    @Select("SELECT * FROM foreshadow WHERE document_id = #{docId}")
+    List<Foreshadow> findByDocumentId(Long docId);
+
     @Insert("INSERT INTO foreshadow (user_id, title, description, status, remain_chapters) VALUES (#{userId}, #{title}, #{description}, #{status}, #{remainChapters})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(Foreshadow f);

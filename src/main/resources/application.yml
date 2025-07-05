@@ -12,3 +12,18 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
   type-aliases-package: com.xiaowa.writingassistant.entity
+
+server:
+  port: 8081
+
+vivo:
+  api:
+    domain: "api-ai.vivo.com.cn"
+    app-id: "2025301523"
+    app-key: "wqRFrShBGxbfyOMx"
+    completions-uri: "/vivogpt/completions"
+    model-name: "vivo-BlueLM-TB-Pro"
+
+ai:
+  service:
+    base-url: "http://localhost:8081"

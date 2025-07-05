@@ -34,9 +34,10 @@ public class SecurityConfig {
                                            DaoAuthenticationProvider authProvider) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .authenticationProvider(authProvider)            // ← 关键：确保用你的 provider
+                .authenticationProvider(authProvider)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/v1/generate/foreshadowing/identify").permitAll() // ✅ 加这一行
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults());
