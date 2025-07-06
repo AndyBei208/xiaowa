@@ -4,15 +4,15 @@ import java.util.List;
 
 public class SettingsDTO {
 
-    private List<String> existingSettings; // 已有设定集（JSON 字符串列表）
-    private String documentContent; // 新文本内容
+    private List<SettingItemSimpleDTO> existingSettings; // 已有设定集（对象数组）
+    private String documentContent;
 
     // getters and setters
-    public List<String> getExistingSettings() {
+    public List<SettingItemSimpleDTO> getExistingSettings() {
         return existingSettings;
     }
 
-    public void setExistingSettings(List<String> existingSettings) {
+    public void setExistingSettings(List<SettingItemSimpleDTO> existingSettings) {
         this.existingSettings = existingSettings;
     }
 

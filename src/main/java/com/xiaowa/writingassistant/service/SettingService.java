@@ -69,10 +69,22 @@ public class SettingService {
 
     @Transactional
     public List<SettingItem> extractFromDocument(Long documentId, Long collectionId) {
+        System.out.println("[extractFromDocument] documentId=" + documentId + " collectionId=" + collectionId);
+
         Document doc = docMapper.findById(documentId);
         if (doc == null) throw new ResourceNotFoundException("Document not found: " + documentId);
+
+        String content = doc.getContent();
+        System.out.println("[extractFromDocument] 正文内容前100字: " + (content != null ? content.substring(0, Math.min(100, content.length())) : "null"));
+
         // 调用 AI 提取角色设定
-        List<AIClient.CharacterSetting> extracted = aiClient.extractCharacterSettings(doc.getContent());
+        List<AIClient.CharacterSetting> extracted = aiClient.extractCharacterSettings(content);
+
+        System.out.println("AI返回提取设定数: " + extracted.size());
+        for (AIClient.CharacterSetting cs : extracted) {
+            System.out.println("AI提取设定：" + cs.getName() + " / " + cs.getDescription());
+        }
+
         for (AIClient.CharacterSetting cs : extracted) {
             SettingItem i = new SettingItem();
             i.setCollectionId(collectionId);
@@ -83,4 +95,5 @@ public class SettingService {
         }
         return itemMapper.findByCollectionId(collectionId);
     }
+
 }

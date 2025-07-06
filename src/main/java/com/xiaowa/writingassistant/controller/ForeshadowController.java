@@ -3,17 +3,24 @@ package com.xiaowa.writingassistant.controller;
 import com.xiaowa.writingassistant.exception.BadRequestException;
 import com.xiaowa.writingassistant.common.Result;
 import com.xiaowa.writingassistant.entity.Foreshadow;
+import com.xiaowa.writingassistant.entity.UserAccount;
 import com.xiaowa.writingassistant.service.ForeshadowService;
+import com.xiaowa.writingassistant.mapper.UserAccountMapper;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/foreshadows")
 public class ForeshadowController {
     private final ForeshadowService service;
+    private final UserAccountMapper userAccountMapper;
 
-    public ForeshadowController(ForeshadowService service) {
+    public ForeshadowController(ForeshadowService service, UserAccountMapper userAccountMapper) {
         this.service = service;
+        this.userAccountMapper = userAccountMapper;
     }
 
     // 创建伏笔
@@ -30,8 +37,12 @@ public class ForeshadowController {
             @RequestParam(required = false) String tagType,
             @RequestParam(required = false) String label
     ) {
-        // TODO: service 方法增加条件过滤
-        List<Foreshadow> list = service.listByUser(/* 从安全上下文获取 userId */ 1L);
+        Long userId = getCurrentUserId();
+        List<Foreshadow> list = service.listByUser(userId);
+        // 这里可加进一步的过滤，如果你需要支持 status/tagType/label 多条件
+        // 例如：
+        // if (status != null) { list = list.stream().filter(f -> status.equals(f.getStatus())).toList(); }
+        // if (label != null) { ... }
         return Result.success(list);
     }
 
@@ -50,7 +61,7 @@ public class ForeshadowController {
         return Result.success(updated);
     }
 
-    // 删除伏笔（忽略）
+    // 删除伏笔
     @DeleteMapping("/{id}")
     public Result<String> delete(@PathVariable Long id) {
         service.delete(id);
@@ -82,7 +93,17 @@ public class ForeshadowController {
     // 获取回收提醒列表
     @GetMapping("/reminders")
     public Result<List<Foreshadow>> reminders(@RequestParam(defaultValue = "2") int threshold) {
-        List<Foreshadow> list = service.listReminders(/* userId */ 1L, threshold);
+        Long userId = getCurrentUserId();
+        List<Foreshadow> list = service.listReminders(userId, threshold);
         return Result.success(list);
+    }
+
+    /** 获取当前登录用户id，通用写法 */
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        UserAccount user = userAccountMapper.findByUsername(username);
+        if (user == null) throw new RuntimeException("用户不存在");
+        return user.getId();
     }
 }

@@ -2,9 +2,13 @@ package com.xiaowa.writingassistant.service;
 
 import com.xiaowa.writingassistant.entity.Foreshadow;
 import com.xiaowa.writingassistant.entity.ForeshadowTag;
+import com.xiaowa.writingassistant.entity.UserAccount;
 import com.xiaowa.writingassistant.exception.ResourceNotFoundException;
 import com.xiaowa.writingassistant.mapper.ForeshadowMapper;
 import com.xiaowa.writingassistant.mapper.ForeshadowTagMapper;
+import com.xiaowa.writingassistant.mapper.UserAccountMapper;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,19 +20,25 @@ public class ForeshadowService {
 
     private final ForeshadowMapper foreshadowMapper;
     private final ForeshadowTagMapper tagMapper;
+    private final UserAccountMapper userAccountMapper;
 
-    public ForeshadowService(ForeshadowMapper foreshadowMapper, ForeshadowTagMapper tagMapper) {
+    public ForeshadowService(ForeshadowMapper foreshadowMapper,
+                             ForeshadowTagMapper tagMapper,
+                             UserAccountMapper userAccountMapper) {
         this.foreshadowMapper = foreshadowMapper;
         this.tagMapper = tagMapper;
+        this.userAccountMapper = userAccountMapper;
     }
 
-    // 新增方法：根据文档ID获取该文档下的所有伏笔
     public List<Foreshadow> listByDocumentId(Long docId) {
         return foreshadowMapper.findByDocumentId(docId);
     }
 
     @Transactional
     public Foreshadow create(Foreshadow f) {
+        // 自动写入当前用户的 user_id
+        Long userId = getCurrentUserId();
+        f.setUserId(userId);
         foreshadowMapper.insert(f);
         if (f.getTags() != null) {
             for (ForeshadowTag tag : f.getTags()) {
@@ -64,6 +74,11 @@ public class ForeshadowService {
         if (existing == null) {
             throw new ResourceNotFoundException("Foreshadow not found: " + f.getId());
         }
+        // 只允许本人修改
+        Long userId = getCurrentUserId();
+        if (!userId.equals(existing.getUserId())) {
+            throw new RuntimeException("无权限操作该伏笔");
+        }
         foreshadowMapper.update(f);
         tagMapper.deleteByForeshadowId(f.getId());
         if (f.getTags() != null) {
@@ -81,16 +96,22 @@ public class ForeshadowService {
         if (f == null) {
             throw new ResourceNotFoundException("Foreshadow not found: " + id);
         }
-        // 保持原有行为：只删除主表记录，不改动标签表
-        foreshadowMapper.delete(id);
+        Long userId = getCurrentUserId();
+        if (!userId.equals(f.getUserId())) {
+            throw new RuntimeException("无权限操作该伏笔");
+        }
+        foreshadowMapper.deleteByIdAndUserId(id, userId);
     }
 
     @Transactional
     public Foreshadow aiDetect(Long id, int predictedRemain) {
-        // 先读取已有伏笔，避免字段丢失
         Foreshadow f = foreshadowMapper.findById(id);
         if (f == null) {
             throw new ResourceNotFoundException("Foreshadow not found: " + id);
+        }
+        Long userId = getCurrentUserId();
+        if (!userId.equals(f.getUserId())) {
+            throw new RuntimeException("无权限操作该伏笔");
         }
         f.setRemainChapters(predictedRemain);
         foreshadowMapper.update(f);
@@ -106,12 +127,18 @@ public class ForeshadowService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 新增的方法：为指定 Foreshadow 添加一个标签
-     */
     @Transactional
     public void addTag(Long foreshadowId, ForeshadowTag tag) {
         tag.setForeshadowId(foreshadowId);
         tagMapper.insert(tag);
+    }
+
+    /** 工具方法：取当前用户id */
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        UserAccount user = userAccountMapper.findByUsername(username);
+        if (user == null) throw new RuntimeException("用户不存在");
+        return user.getId();
     }
 }

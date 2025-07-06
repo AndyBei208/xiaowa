@@ -2,9 +2,11 @@ package com.xiaowa.writingassistant.controller;
 
 import com.xiaowa.writingassistant.common.Result;
 import com.xiaowa.writingassistant.entity.Document;
+import com.xiaowa.writingassistant.mapper.UserAccountMapper; // 新增
 import com.xiaowa.writingassistant.service.DocumentService;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal; // 新增
 import java.util.List;
 
 @RestController
@@ -12,9 +14,11 @@ import java.util.List;
 public class DocumentController {
 
     private final DocumentService documentService;
+    private final UserAccountMapper userMapper; // 新增
 
-    public DocumentController(DocumentService documentService) {
+    public DocumentController(DocumentService documentService, UserAccountMapper userMapper) {
         this.documentService = documentService;
+        this.userMapper = userMapper; // 新增
     }
 
     @PostMapping
@@ -49,11 +53,19 @@ public class DocumentController {
         return Result.success("Document deleted");
     }
 
-    // 批量获取多章接口：GET /api/docs/batch?ids=1,2,3,4,5
     @GetMapping("/batch")
     public Result<List<Document>> batchGet(@RequestParam List<Long> ids) {
         List<Document> docs = documentService.getDocumentsByIds(ids);
         return Result.success(docs);
     }
 
+    // ===================== 改为“取当前登录用户的所有文档” ==========================
+    @GetMapping
+    public Result<List<Document>> listAllDocs(Principal principal) {
+        // 用登录用户名查 userId（比如 testuser 就查 testuser 的 userId）
+        Long userId = userMapper.findByUsername(principal.getName()).getId();
+        List<Document> docs = documentService.listDocuments(userId);
+        return Result.success(docs);
+    }
+    // ================================================================================
 }

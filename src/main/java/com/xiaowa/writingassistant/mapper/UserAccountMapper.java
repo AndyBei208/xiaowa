@@ -3,10 +3,10 @@ package com.xiaowa.writingassistant.mapper;
 import com.xiaowa.writingassistant.entity.UserAccount;
 import org.apache.ibatis.annotations.*;
 
+@Mapper
 public interface UserAccountMapper {
 
-    @Insert("INSERT INTO user_account (username, email, password_hash) " +
-            "VALUES (#{username}, #{email}, #{passwordHash})")
+    @Insert("INSERT INTO user_account (username, email, password_hash) VALUES (#{username}, #{email}, #{passwordHash})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(UserAccount user);
 

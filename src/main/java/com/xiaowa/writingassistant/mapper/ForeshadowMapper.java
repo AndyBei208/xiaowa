@@ -27,4 +27,8 @@ public interface ForeshadowMapper {
 
     @Delete("DELETE FROM foreshadow WHERE id = #{id}")
     void delete(Long id);
+
+    // 新增：只允许本人删除自己的伏笔
+    @Delete("DELETE FROM foreshadow WHERE id = #{id} AND user_id = #{userId}")
+    void deleteByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 }
