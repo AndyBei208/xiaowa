@@ -21,4 +21,14 @@ public interface SettingItemMapper {
 
     @Delete("DELETE FROM setting_item WHERE id=#{id}")
     void delete(Long id);
+
+    @Select({
+            "<script>",
+            "SELECT * FROM setting_item WHERE source_document_id IN ",
+            "<foreach collection='docIds' item='id' open='(' separator=',' close=')'>",
+            "#{id}",
+            "</foreach>",
+            "</script>"
+    })
+    List<SettingItem> findBySourceDocumentIds(@Param("docIds") List<Long> docIds);
 }
